@@ -14,8 +14,6 @@ API service untuk manajemen dan pengiriman token crypto (ETH, USDT, BNB, SOL, da
 - **Swap** – Melakukan swap token.
 - **Token Info** – Detail informasi token.
 - **Transaction Status** – Mengecek status transaksi.
-- **Wallet Monitor** – Endpoint `/subscribe` dan `/unsubscribe` untuk mengaktifkan listener transaksi wallet. Mendukung Solana, Ethereum, dan bisa ditambah chain lain.
-
 
 ## ⚡ Teknologi
 
@@ -68,11 +66,9 @@ Semua endpoint berada di prefix `/api/v1/crypto`. Contoh:name
 | `/api/v1/crypto/history`         | GET    | Riwayat transaksi                |
 | `/api/v1/crypto/estimate_gas`    | GET    | Perkiraan biaya gas transaksi    |
 | `/api/v1/crypto/tokens`          | GET    | Daftar token tersedia            |
-| `/api/v1/crypto/swap`            | POST   | Swap token                       |
+| `/api/v1/crypto/swap`            | POST   | Simulasi Swap token              |
 | `/api/v1/crypto/token_info`      | GET    | Detail informasi token           |
 | `/api/v1/crypto/tx_status`       | GET    | Status transaksi                 |
-| `/api/v1/crypto/subscribe`       | POST   | Aktifkan listener transaksi wallet (Solana/Ethereum) |
-| `/api/v1/crypto/unsubscribe`     | POST   | Hentikan listener transaksi wallet                   |
 
 > Dokumentasi interaktif tersedia di `http://127.0.0.1:8000/docs` (Swagger UI) dan `http://127.0.0.1:8000/redoc` (ReDoc).  
 
