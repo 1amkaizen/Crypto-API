@@ -7,7 +7,6 @@ from routers.crypto.ping import ping_router
 from routers.crypto.send import send_router
 from routers.crypto.balance import balance_router
 from routers.crypto.price import price_router
-from routers.crypto.history import history_router
 from routers.crypto.estimate_gas import estimate_gas_router
 from routers.crypto.tokens import tokens_router
 from routers.crypto.swap import swap_router
@@ -27,7 +26,6 @@ crypto_routers = [
     send_router,
     balance_router,
     price_router,
-    history_router,
     estimate_gas_router,
     tokens_router,
     swap_router,

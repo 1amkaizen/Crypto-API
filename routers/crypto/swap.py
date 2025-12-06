@@ -37,7 +37,7 @@ async def get_token_price_usd(token: str) -> float:
         return price
 
 
-@swap_router.post("/swap")
+@swap_router.post("/swap/simulasi")
 async def swap_tokens(from_token: str, to_token: str, amount: float):
     """
     Simulasi Swap token dari satu jenis ke jenis lain berdasarkan harga real-time CoinGecko

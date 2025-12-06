@@ -25,7 +25,7 @@ RPC_ENDPOINTS = {
 @tx_status_router.get("/tx_status")
 async def get_tx_status(chain: str, tx_hash: str):
     """
-    🔹 Cek status transaksi berdasarkan tx_hash
+    Cek status transaksi berdasarkan tx_hash
     chain: "eth", "bnb", "polygon", "sol", "trx"
     """
     chain = chain.lower()
