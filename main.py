@@ -1,5 +1,6 @@
 # 📍 main.py
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.openapi.utils import get_openapi
 
 # ====================== ROUTER CRYPTO ======================
@@ -20,6 +21,21 @@ app = FastAPI(
     version="1.0.0",
 )
 
+# ====================== CORS (RapidAPI Test Support) ======================
+origins = [
+    "https://rapidapi.com",
+    "https://api.rapidapi.com",
+    "*"  # sementara untuk testing semua origin
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 # ====================== REGISTER CRYPTO ROUTERS ======================
 crypto_routers = [
     ping_router,
@@ -35,7 +51,6 @@ crypto_routers = [
 
 for r in crypto_routers:
     app.include_router(r, prefix="/api/v1/crypto", tags=["Crypto"])
-
 
 # ====================== CUSTOM OPENAPI (HANYA CRYPTO) ======================
 def custom_openapi():
@@ -56,5 +71,5 @@ def custom_openapi():
     app.openapi_schema = openapi_schema
     return app.openapi_schema
 
-
 app.openapi = custom_openapi
+
