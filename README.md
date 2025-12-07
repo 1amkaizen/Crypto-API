@@ -73,9 +73,6 @@ Semua endpoint berada di prefix `/api/v1/crypto`.
 
 ## 📝 Catatan
 
-* Semua handler API bersifat asynchronous.
-* Endpoint **send** sekarang ada untuk `native`, `USDT`, dan `USDC`.
-* Project ini cocok untuk wallet management dan automasi transaksi crypto.
 * Pastikan environment variables (API keys, wallet private key, dll) sudah diatur sebelum menjalankan.
 
 ---
