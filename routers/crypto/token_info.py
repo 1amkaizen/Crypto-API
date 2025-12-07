@@ -1,12 +1,12 @@
 # 📍 routers/crypto/token_info.py
 import logging
 import httpx
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Query
 
 token_info_router = APIRouter()
 logger = logging.getLogger(__name__)
 
-# 🔹 Mapping alias token populer ke CoinGecko ID
+# 🔹 Mapping popular token aliases to CoinGecko ID
 TOKEN_ALIAS = {
     "eth": "ethereum",
     "weth": "ethereum",
@@ -29,21 +29,20 @@ TOKEN_ALIAS = {
     "dai": "dai",
     "ftm": "fantom",
     "cake": "pancakeswap-token",
-    "matic": "matic-network",
-    # 🔹 bisa tambah lagi sesuai kebutuhan
+    # 🔹 can add more as needed
 }
 
 
 async def fetch_token_metadata_coingecko(token_id: str) -> dict:
     """
-    Ambil metadata token dari CoinGecko API
+    Fetch token metadata from CoinGecko API
     """
     url = f"https://api.coingecko.com/api/v3/coins/{token_id.lower()}"
     async with httpx.AsyncClient(timeout=10) as client:
         resp = await client.get(url)
         if resp.status_code != 200:
             raise HTTPException(
-                status_code=404, detail=f"Token {token_id} tidak ditemukan di CoinGecko"
+                status_code=404, detail=f"Token {token_id} not found on CoinGecko"
             )
         data = resp.json()
         metadata = {
@@ -68,21 +67,31 @@ async def fetch_token_metadata_coingecko(token_id: str) -> dict:
         return metadata
 
 
-@token_info_router.get("/token_info")
-async def get_token_info(token: str):
+@token_info_router.get(
+    "/token_info",
+    summary="Get Token Metadata",
+    description=(
+        "Fetch real-time metadata of a token from CoinGecko. "
+        "Popular aliases are supported, e.g., sol -> solana, eth -> ethereum, etc."
+    ),
+)
+async def get_token_info(
+    token: str = Query(..., description="Token symbol or alias to fetch metadata for")
+):
     """
-    Ambil metadata token dari CoinGecko secara real-time.
-    User bisa pakai alias populer: sol -> solana, eth -> ethereum, dll.
+    Fetch real-time token metadata from CoinGecko.
+
+    - **token**: Token symbol or popular alias (e.g., sol, eth, usdt)
+    - **Note**: Alias mapping is applied automatically if available
     """
     try:
-        # 🔹 Gunakan alias jika ada
         token_id = TOKEN_ALIAS.get(token.lower(), token.lower())
         metadata = await fetch_token_metadata_coingecko(token_id)
-        logger.info(f"Token info diambil dari CoinGecko: {token} -> {token_id}")
+        logger.info(f"Token info fetched from CoinGecko: {token} -> {token_id}")
         return {"status": "success", "token": token.lower(), "metadata": metadata}
     except HTTPException as he:
-        logger.warning(f"Token {token} tidak ditemukan: {he.detail}")
+        logger.warning(f"Token {token} not found: {he.detail}")
         raise he
     except Exception as e:
-        logger.error(f"❌ Gagal ambil token info: {e}", exc_info=True)
+        logger.error(f"❌ Failed to fetch token info: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))

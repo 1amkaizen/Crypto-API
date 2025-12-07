@@ -6,17 +6,26 @@ tokens_router = APIRouter()  # router khusus untuk tokens
 logger = logging.getLogger(__name__)
 
 
-@tokens_router.get("/tokens")
+@tokens_router.get(
+    "/tokens",
+    summary="Get Supported Tokens",
+    description=(
+        "Retrieve a list of tokens and blockchains supported by this API. "
+        "Clients can use this list to know which tokens are available for "
+        "features like token swaps, sending native tokens, or other crypto operations."
+    ),
+)
 async def get_supported_tokens():
     """
-    Endpoint untuk menampilkan daftar token/blockchain yang didukung API ini.
-    Digunakan untuk memastikan client mengetahui token apa saja yang dapat
-    digunakan pada fitur swap, kirim native, ataupun fungsi crypto lainnya.
+    Return the list of tokens and blockchains supported by the API.
+
+    This helps clients to determine which tokens can be used with
+    various crypto functionalities such as swap, send native, and more.
     """
-    # daftar token yang disupport
+    # List of supported tokens
     tokens = ["BASE", "SOL", "ETH", "BNB", "TRX"]
 
-    # logging
-    logger.info("📌 Request daftar token yang didukung")
+    # Logging
+    logger.info("📌 Request for supported tokens list")
 
     return {"status": "success", "tokens": tokens}

@@ -20,8 +20,8 @@ API service untuk manajemen dan pengiriman token crypto (ETH, USDT, USDC, BNB, S
 1. Clone repo:
 
 ```bash
-git clone https://github.com/1amkaizen/crypto-api-service.git
-cd crypto-api-service
+git clone https://github.com/1amkaizen/Crypto-API.git
+cd Crypto-API
 ```
 
 2. Buat virtual environment & install dependencies:

@@ -1,54 +1,89 @@
 # 📍 routers/crypto/tx_status.py
-import os
 import logging
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Query
 from solana.rpc.async_api import AsyncClient as SolanaClient
+from solders.signature import Signature
 from web3 import AsyncWeb3, AsyncHTTPProvider
+import asyncio
+
 
 tx_status_router = APIRouter()
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
 
-# 🔹 Ambil RPC dari environment variables, fallback ke default public RPC
-RPC_ENDPOINTS = {
-    "eth": os.getenv(
-        "ETH_RPC_URL", "https://mainnet.infura.io/v3/YOUR_INFURA_PROJECT_ID"
+
+async def get_solana_tx_status(
+    tx_hash: str, rpc_url: str, max_attempts: int = 5, delay: float = 2.0
+):
+    """Cek status transaksi Solana hingga finalized/confirmed dengan retry"""
+    from solders.signature import Signature
+    from solana.rpc.async_api import AsyncClient as SolanaClient
+
+    signature = Signature.from_string(tx_hash)
+    attempt = 0
+    async with SolanaClient(rpc_url) as client:
+        while attempt < max_attempts:
+            attempt += 1
+            try:
+                resp = await client.get_transaction(
+                    signature, encoding="json", commitment="finalized"
+                )
+                tx_data = resp.value
+                if tx_data is not None:
+                    meta = getattr(tx_data, "meta", None)
+                    if meta is not None:
+                        success = meta.err is None if hasattr(meta, "err") else None
+                        return {
+                            "status": "success" if success else "failed",
+                            "tx_hash": tx_hash,
+                            "fee": getattr(meta, "fee", None),
+                            "pre_balances": getattr(meta, "pre_balances", None),
+                            "post_balances": getattr(meta, "post_balances", None),
+                            "err": getattr(meta, "err", None),
+                        }
+                await asyncio.sleep(delay)
+            except Exception as e:
+                # log tapi lanjut retry
+                logger.warning(f"Attempt {attempt} gagal cek Solana tx: {e}")
+                await asyncio.sleep(delay)
+
+    return {
+        "status": "pending",
+        "tx_hash": tx_hash,
+        "note": f"Belum confirmed setelah {max_attempts} percobaan",
+    }
+
+
+@tx_status_router.get(
+    "/tx_status",
+    summary="Get Transaction Status",
+    description=(
+        "Check the status of a transaction on supported blockchains using the transaction hash. "
+        "Supports Solana, Ethereum, BSC, Polygon, TRON (placeholder), and Base. "
+        "RPC URL must be provided via the endpoint."
     ),
-    "bnb": os.getenv("BSC_RPC_URL", "https://bsc-dataseed.binance.org/"),
-    "polygon": os.getenv("POLYGON_RPC_URL", "https://polygon-rpc.com/"),
-    "sol": os.getenv("SOLANA_RPC_URL", "https://api.mainnet-beta.solana.com"),
-    "trx": os.getenv("TRON_FULL_NODE", "https://api.trongrid.io"),
-    "base": os.getenv("BASE_RPC_URL"),
-}
-
-
-@tx_status_router.get("/tx_status")
-async def get_tx_status(chain: str, tx_hash: str):
-    """
-    Cek status transaksi berdasarkan tx_hash
-    chain: "eth", "bnb", "polygon", "sol", "trx"
-    """
+)
+async def get_tx_status(
+    chain: str = Query(
+        ..., description="Blockchain chain: eth, bnb, polygon, sol, trx, base"
+    ),
+    tx_hash: str = Query(..., description="Transaction hash to query the status of"),
+    rpc_url: str = Query(..., description="RPC URL for the blockchain node"),
+):
     chain = chain.lower()
     try:
-        if chain == "sol":
-            logger.info(f"🔹 Mengecek status tx Solana: {tx_hash}")
-            async with SolanaClient(RPC_ENDPOINTS["sol"]) as client:
-                resp = await client.get_confirmed_transaction(tx_hash)
-                if resp["result"] is None:
-                    return {"status": "pending", "tx_hash": tx_hash}
-                meta = resp["result"]["meta"]
-                success = meta["err"] is None
-                return {
-                    "status": "success" if success else "failed",
-                    "tx_hash": tx_hash,
-                    "fee": meta.get("fee"),
-                    "pre_balances": meta.get("preBalances"),
-                    "post_balances": meta.get("postBalances"),
-                }
+        if not rpc_url:
+            raise HTTPException(status_code=400, detail="RPC URL harus diberikan")
 
-        elif chain in ["eth", "bnb", "polygon"]:
-            logger.info(f"🔹 Mengecek status tx {chain.upper()}: {tx_hash}")
-            w3 = AsyncWeb3(AsyncHTTPProvider(RPC_ENDPOINTS[chain]))
+        if chain == "sol":
+            logger.info(f"🔹 Checking Solana tx status: {tx_hash} via {rpc_url}")
+            return await get_solana_tx_status(tx_hash, rpc_url)
+
+        elif chain in ["eth", "bnb", "polygon", "base"]:
+            logger.info(
+                f"🔹 Checking {chain.upper()} tx status: {tx_hash} via {rpc_url}"
+            )
+            w3 = AsyncWeb3(AsyncHTTPProvider(rpc_url))
             receipt = await w3.eth.get_transaction_receipt(tx_hash)
             if receipt is None:
                 return {"status": "pending", "tx_hash": tx_hash}
@@ -62,17 +97,18 @@ async def get_tx_status(chain: str, tx_hash: str):
             }
 
         elif chain == "trx":
-            # 🔹 Placeholder TRX (TRON) support, nanti bisa pakai tronpy async
-            logger.info(f"🔹 Mengecek status tx TRX (placeholder): {tx_hash}")
+            logger.info(f"🔹 Checking TRX tx status (placeholder): {tx_hash}")
             return {
                 "status": "pending",
                 "tx_hash": tx_hash,
-                "note": "TRX async belum diimplementasi",
+                "note": "TRX async not yet implemented",
             }
 
         else:
-            raise HTTPException(status_code=400, detail=f"Chain {chain} tidak didukung")
+            raise HTTPException(
+                status_code=400, detail=f"Chain {chain} is not supported"
+            )
 
     except Exception as e:
-        logger.error(f"❌ Gagal cek tx_status [{chain}]: {e}", exc_info=True)
+        logger.error(f"❌ Failed to check tx_status [{chain}]: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
