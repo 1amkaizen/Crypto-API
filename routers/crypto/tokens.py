@@ -16,7 +16,7 @@ class TokensResponse(BaseModel):
         schema_extra = {
             "example": {
                 "status": "success",
-                "tokens": ["BASE", "SOL", "ETH", "BNB", "TRX"],
+                "tokens": ["BASE", "SOL", "ETH", "BNB", "TRX", "POLYGON"],
             }
         }
 
@@ -47,7 +47,7 @@ class ErrorResponse(BaseModel):
                 "application/json": {
                     "example": {
                         "status": "success",
-                        "tokens": ["BASE", "SOL", "ETH", "BNB", "TRX"],
+                        "tokens": ["BASE", "SOL", "ETH", "BNB", "TRX", "POLYGON"],
                     }
                 }
             },
@@ -72,6 +72,6 @@ async def get_supported_tokens():
     This helps clients to determine which tokens can be used with
     various crypto functionalities such as swap, send native, and more.
     """
-    tokens = ["BASE", "SOL", "ETH", "BNB", "TRX"]
+    tokens = ["BASE", "SOL", "ETH", "BNB", "TRX", "POLYGON"]
     logger.info("📌 Request for supported tokens list")
     return {"status": "success", "tokens": tokens}
