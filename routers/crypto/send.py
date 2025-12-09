@@ -24,8 +24,19 @@ class ErrorResponse(BaseModel):
 # -------------------- NATIVE --------------------
 @send_router.post(
     "/send/native",
-    summary="Send Native Token",
-    description="Endpoint to send native tokens like SOL, ETH, BNB, or BASE",
+    summary="Send Native Token (SOL, ETH, BNB, TRON, MATIC, BASE)",
+    description=(
+        "Endpoint untuk mengirim token native ke wallet tujuan.\n"
+        "- Solana: sol\n"
+        "- Ethereum: eth\n"
+        "- Binance Smart Chain: bnb\n"
+        "- TRON: trx\n"
+        "- Polygon: polygon\n"
+        "- Base: base\n\n"
+        "Pastikan RPC URL dan private key valid.\n"
+        "Response mengandung status transaksi dan tx_hash.\n"
+        "Gunakan token sesuai chain agar tidak gagal."
+    ),
     response_model=SendResponse,
     responses={
         200: {
@@ -53,6 +64,7 @@ class ErrorResponse(BaseModel):
         },
     },
 )
+
 async def send_native_token(
     token: str,
     destination_wallet: str,
@@ -92,7 +104,13 @@ async def send_native_token(
 @send_router.post(
     "/send/usdc",
     summary="Send USDC",
-    description="Endpoint to send USDC to a destination wallet via ETH/BSC/TRX chains",
+    description=(
+        "Endpoint untuk kirim USDC ke wallet tujuan.\n"
+        "Supported chains: ETH, BSC, TRX, Polygon, Base\n\n"
+        "- Pastikan token_address sesuai chain.\n"
+        "- RPC URL dan private key harus valid.\n"
+        "Response mengandung status transaksi dan tx_hash."
+    ),
     response_model=SendResponse,
     responses={
         200: {
@@ -120,6 +138,7 @@ async def send_native_token(
         },
     },
 )
+
 async def send_usdc_endpoint(
     chain: str,
     destination_wallet: str,
@@ -161,7 +180,13 @@ async def send_usdc_endpoint(
 @send_router.post(
     "/send/usdt",
     summary="Send USDT",
-    description="Endpoint to send USDT to a destination wallet via ETH/BSC/TRX chains",
+    description=(
+        "Endpoint untuk kirim USDT ke wallet tujuan.\n"
+        "Supported chains: ETH, BSC, TRX, Polygon, Base, Solana\n\n"
+        "- Pastikan token_address sesuai chain.\n"
+        "- RPC URL dan private key harus valid.\n"
+        "Response mengandung status transaksi dan tx_hash."
+    ),
     response_model=SendResponse,
     responses={
         200: {
@@ -189,6 +214,7 @@ async def send_usdc_endpoint(
         },
     },
 )
+
 async def send_usdt_endpoint(
     chain: str,
     destination_wallet: str,

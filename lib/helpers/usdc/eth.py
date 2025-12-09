@@ -8,7 +8,6 @@ logging.basicConfig(
     level=logging.INFO, format="%(asctime)s [%(levelname)s] %(name)s: %(message)s"
 )
 
-# ===== ERC20 ABI =====
 ERC20_ABI = [
     {
         "constant": False,
@@ -37,7 +36,6 @@ ERC20_ABI = [
 ]
 
 
-# ===== Fungsi cek saldo USDC =====
 def get_usdc_balance(wallet_address: str, rpc_url: str, token_address: str) -> float:
     try:
         w3 = Web3(Web3.HTTPProvider(rpc_url))
@@ -61,11 +59,10 @@ def get_usdc_balance(wallet_address: str, rpc_url: str, token_address: str) -> f
         return 0.0
 
 
-# ===== Async polling untuk receipt =====
 async def wait_tx_receipt_async(
     w3: Web3, tx_hash: str, poll_interval: int = 5, timeout: int = 180
 ):
-    await asyncio.sleep(2)  # delay awal supaya node register tx
+    await asyncio.sleep(2)
     start = asyncio.get_event_loop().time()
     while True:
         try:
@@ -80,14 +77,13 @@ async def wait_tx_receipt_async(
         await asyncio.sleep(poll_interval)
 
 
-# ===== Fungsi Kirim USDC ERC20 =====
 async def send_usdc_eth(
     destination_wallet: str,
     amount: float,
     rpc_url: str,
     private_key: str,
     token_address: str,
-    chain_id: int = None,  # opsional, bisa mainnet/testnet
+    chain_id: int = None,
 ):
     try:
         if not rpc_url or not private_key or not token_address:
@@ -97,7 +93,6 @@ async def send_usdc_eth(
         if not w3.is_connected():
             raise Exception("RPC tidak terhubung")
 
-        # Tentukan chain_id otomatis dari RPC jika tidak dikirim
         if chain_id is None:
             rpc_lower = rpc_url.lower()
             if "goerli" in rpc_lower:
@@ -109,26 +104,23 @@ async def send_usdc_eth(
             elif "bsc" in rpc_lower:
                 chain_id = 56
             else:
-                chain_id = 1  # default mainnet
+                chain_id = 1
 
         account = w3.eth.account.from_key(private_key)
         from_address = Web3.to_checksum_address(account.address)
         destination_wallet = Web3.to_checksum_address(destination_wallet)
         token_address = Web3.to_checksum_address(token_address)
-
         contract = w3.eth.contract(address=token_address, abi=ERC20_ABI)
 
         try:
             decimals = contract.functions.decimals().call()
         except Exception:
-            logger.warning("⚠️ Gagal baca decimals, pakai default 6 (USDC)")
+            logger.warning("⚠️ Gagal baca decimals, pakai default 6")
             decimals = 6
 
-        # log saldo sebelum kirim
         get_usdc_balance(from_address, rpc_url, token_address)
         get_usdc_balance(destination_wallet, rpc_url, token_address)
 
-        # cek balance cukup
         balance_usdc = contract.functions.balanceOf(from_address).call() / (
             10**decimals
         )
@@ -138,11 +130,17 @@ async def send_usdc_eth(
         value = int(amount * (10**decimals))
         nonce = w3.eth.get_transaction_count(from_address, "pending")
 
+        # ===== gas otomatis =====
+        gas_estimate = contract.functions.transfer(
+            destination_wallet, value
+        ).estimate_gas({"from": from_address})
+        gas_price = w3.eth.gas_price
+
         tx = contract.functions.transfer(destination_wallet, value).build_transaction(
             {
                 "chainId": chain_id,
-                "gas": 100000,
-                "gasPrice": int(w3.eth.gas_price * 1.2),
+                "gas": gas_estimate,
+                "gasPrice": gas_price,
                 "nonce": nonce,
                 "from": from_address,
             }

@@ -1,4 +1,4 @@
-# 📍 lib/helpers/usdt/bsc.py
+# 📍 lib/helpers/usdc/polygon.py
 import logging
 import asyncio
 from web3 import Web3
@@ -36,9 +36,7 @@ ERC20_ABI = [
 ]
 
 
-def get_usdt_balance(
-    wallet_address: str, rpc_url: str, token_address: str, retries: int = 3
-) -> float:
+def get_usdc_balance(wallet_address: str, rpc_url: str, token_address: str) -> float:
     try:
         w3 = Web3(Web3.HTTPProvider(rpc_url))
         if not w3.is_connected():
@@ -46,35 +44,18 @@ def get_usdt_balance(
         contract = w3.eth.contract(
             address=Web3.to_checksum_address(token_address), abi=ERC20_ABI
         )
-
         try:
             decimals = contract.functions.decimals().call()
         except Exception:
-            logger.warning("⚠️ Gagal baca decimals, pakai default 18 (USDT)")
-            decimals = 18
-
-        attempt = 0
-        while attempt < retries:
-            try:
-                balance_raw = contract.functions.balanceOf(
-                    Web3.to_checksum_address(wallet_address)
-                ).call()
-                balance = balance_raw / (10**decimals)
-                logger.info(f"💰 Saldo USDT {wallet_address}: {balance} USDT")
-                return balance
-            except Exception as e:
-                logger.warning(
-                    f"⚠️ Gagal cek saldo (attempt {attempt+1}/{retries}): {e}"
-                )
-                attempt += 1
-                asyncio.sleep(1)
-
-        logger.error(
-            f"❌ Gagal cek saldo USDT BSC setelah {retries} percobaan, return 0"
-        )
-        return 0.0
+            logger.warning("⚠️ Gagal baca decimals, pakai default 6 (USDC)")
+            decimals = 6
+        balance = contract.functions.balanceOf(
+            Web3.to_checksum_address(wallet_address)
+        ).call() / (10**decimals)
+        logger.info(f"💰 Saldo USDC {wallet_address}: {balance} USDC")
+        return balance
     except Exception as e:
-        logger.error(f"❌ Gagal cek saldo USDT BEP20: {e}", exc_info=True)
+        logger.error(f"❌ Gagal cek saldo USDC: {e}", exc_info=True)
         return 0.0
 
 
@@ -96,13 +77,13 @@ async def wait_tx_receipt_async(
         await asyncio.sleep(poll_interval)
 
 
-async def send_usdt_bsc(
+async def send_usdc_polygon(
     destination_wallet: str,
     amount: float,
     rpc_url: str,
     private_key: str,
     token_address: str,
-    chain_id: int = None,
+    chain_id: int = 80001,
 ):
     try:
         if not rpc_url or not private_key or not token_address:
@@ -111,10 +92,6 @@ async def send_usdt_bsc(
         w3 = Web3(Web3.HTTPProvider(rpc_url))
         if not w3.is_connected():
             raise Exception("RPC tidak terhubung")
-
-        if chain_id is None:
-            rpc_lower = rpc_url.lower()
-            chain_id = 97 if "testnet" in rpc_lower else 56
 
         account = w3.eth.account.from_key(private_key)
         from_address = Web3.to_checksum_address(account.address)
@@ -125,23 +102,22 @@ async def send_usdt_bsc(
         try:
             decimals = contract.functions.decimals().call()
         except Exception:
-            logger.warning("⚠️ Gagal baca decimals, pakai default 18 (USDT)")
-            decimals = 18
+            logger.warning("⚠️ Gagal baca decimals, pakai default 6")
+            decimals = 6
 
-        # log saldo sebelum kirim
-        get_usdt_balance(from_address, rpc_url, token_address)
-        get_usdt_balance(destination_wallet, rpc_url, token_address)
+        get_usdc_balance(from_address, rpc_url, token_address)
+        get_usdc_balance(destination_wallet, rpc_url, token_address)
 
-        balance_usdt = contract.functions.balanceOf(from_address).call() / (
+        balance_usdc = contract.functions.balanceOf(from_address).call() / (
             10**decimals
         )
-        if amount > balance_usdt:
-            raise Exception(f"USDT balance tidak cukup: {balance_usdt} < {amount}")
+        if amount > balance_usdc:
+            raise Exception(f"Saldo tidak cukup: {balance_usdc} < {amount}")
 
         value = int(amount * (10**decimals))
         nonce = w3.eth.get_transaction_count(from_address, "pending")
 
-        # ===== gas otomatis dari RPC =====
+        # ===== gas otomatis =====
         gas_estimate = contract.functions.transfer(
             destination_wallet, value
         ).estimate_gas({"from": from_address})
@@ -164,14 +140,15 @@ async def send_usdt_bsc(
         receipt = await wait_tx_receipt_async(w3, tx_hash.hex())
         if receipt.status == 1:
             logger.info(
-                f"✅ USDT BEP20 berhasil masuk ke {destination_wallet}, tx_hash={tx_hash.hex()}"
+                f"✅ USDC ERC20 berhasil masuk ke {destination_wallet}, tx_hash={tx_hash.hex()}"
             )
-            get_usdt_balance(from_address, rpc_url, token_address)
-            get_usdt_balance(destination_wallet, rpc_url, token_address)
+            get_usdc_balance(from_address, rpc_url, token_address)
+            get_usdc_balance(destination_wallet, rpc_url, token_address)
             return tx_hash.hex()
         else:
-            logger.error(f"❌ Transaksi gagal masuk blockchain: {tx_hash.hex()}")
+            logger.error(f"❌ Transaksi gagal: {tx_hash.hex()}")
             return None
+
     except Exception as e:
-        logger.error(f"❌ Gagal kirim USDT BEP20: {e}", exc_info=True)
+        logger.error(f"❌ Gagal kirim USDC ERC20 Polygon: {e}", exc_info=True)
         return None

@@ -37,13 +37,16 @@ ERC20_ABI = [
 ]
 
 
-# ===== Fungsi cek saldo USDC BEP20 =====
-def get_usdc_balance(wallet_address: str, rpc_url: str, token_address: str, retries: int = 3) -> float:
+def get_usdc_balance(
+    wallet_address: str, rpc_url: str, token_address: str, retries: int = 3
+) -> float:
     try:
         w3 = Web3(Web3.HTTPProvider(rpc_url))
         if not w3.is_connected():
             raise Exception("RPC tidak terhubung")
-        contract = w3.eth.contract(address=Web3.to_checksum_address(token_address), abi=ERC20_ABI)
+        contract = w3.eth.contract(
+            address=Web3.to_checksum_address(token_address), abi=ERC20_ABI
+        )
         try:
             decimals = contract.functions.decimals().call()
         except Exception:
@@ -53,16 +56,22 @@ def get_usdc_balance(wallet_address: str, rpc_url: str, token_address: str, retr
         attempt = 0
         while attempt < retries:
             try:
-                balance_raw = contract.functions.balanceOf(Web3.to_checksum_address(wallet_address)).call()
+                balance_raw = contract.functions.balanceOf(
+                    Web3.to_checksum_address(wallet_address)
+                ).call()
                 balance = balance_raw / (10**decimals)
                 logger.info(f"💰 Saldo USDC {wallet_address}: {balance} USDC")
                 return balance
             except Exception as e:
-                logger.warning(f"⚠️ Gagal cek saldo (attempt {attempt+1}/{retries}): {e}")
+                logger.warning(
+                    f"⚠️ Gagal cek saldo (attempt {attempt+1}/{retries}): {e}"
+                )
                 attempt += 1
                 asyncio.sleep(1)
 
-        logger.error(f"❌ Gagal cek saldo USDC BSC setelah {retries} percobaan, return 0")
+        logger.error(
+            f"❌ Gagal cek saldo USDC BSC setelah {retries} percobaan, return 0"
+        )
         return 0.0
 
     except Exception as e:
@@ -70,8 +79,9 @@ def get_usdc_balance(wallet_address: str, rpc_url: str, token_address: str, retr
         return 0.0
 
 
-# ===== Async polling untuk receipt =====
-async def wait_tx_receipt_async(w3: Web3, tx_hash: str, poll_interval: int = 5, timeout: int = 180):
+async def wait_tx_receipt_async(
+    w3: Web3, tx_hash: str, poll_interval: int = 5, timeout: int = 180
+):
     await asyncio.sleep(2)
     start = asyncio.get_event_loop().time()
     while True:
@@ -87,8 +97,14 @@ async def wait_tx_receipt_async(w3: Web3, tx_hash: str, poll_interval: int = 5, 
         await asyncio.sleep(poll_interval)
 
 
-# ===== Fungsi Kirim USDC BEP20 =====
-async def send_usdc_bsc(destination_wallet: str, amount: float, rpc_url: str, private_key: str, token_address: str, chain_id: int = None):
+async def send_usdc_bsc(
+    destination_wallet: str,
+    amount: float,
+    rpc_url: str,
+    private_key: str,
+    token_address: str,
+    chain_id: int = None,
+):
     try:
         if not rpc_url or not private_key or not token_address:
             raise Exception("RPC, private_key, dan token_address wajib diisi")
@@ -100,10 +116,7 @@ async def send_usdc_bsc(destination_wallet: str, amount: float, rpc_url: str, pr
         # tentukan chain_id otomatis jika tidak dikirim
         if chain_id is None:
             rpc_lower = rpc_url.lower()
-            if "testnet" in rpc_lower:
-                chain_id = 97
-            else:
-                chain_id = 56  # mainnet default
+            chain_id = 97 if "testnet" in rpc_lower else 56
 
         account = w3.eth.account.from_key(private_key)
         from_address = Web3.to_checksum_address(account.address)
@@ -122,20 +135,30 @@ async def send_usdc_bsc(destination_wallet: str, amount: float, rpc_url: str, pr
         get_usdc_balance(from_address, rpc_url, token_address)
         get_usdc_balance(destination_wallet, rpc_url, token_address)
 
-        balance_usdc = contract.functions.balanceOf(from_address).call() / (10**decimals)
+        balance_usdc = contract.functions.balanceOf(from_address).call() / (
+            10**decimals
+        )
         if amount > balance_usdc:
             raise Exception(f"USDC balance tidak cukup: {balance_usdc} < {amount}")
 
         value = int(amount * (10**decimals))
         nonce = w3.eth.get_transaction_count(from_address, "pending")
 
-        tx = contract.functions.transfer(destination_wallet, value).build_transaction({
-            "chainId": chain_id,
-            "gas": 100000,
-            "gasPrice": int(w3.eth.gas_price * 1.2),
-            "nonce": nonce,
-            "from": from_address,
-        })
+        # ===== gas otomatis =====
+        gas_estimate = contract.functions.transfer(
+            destination_wallet, value
+        ).estimate_gas({"from": from_address})
+        gas_price = w3.eth.gas_price
+
+        tx = contract.functions.transfer(destination_wallet, value).build_transaction(
+            {
+                "chainId": chain_id,
+                "gas": gas_estimate,
+                "gasPrice": gas_price,
+                "nonce": nonce,
+                "from": from_address,
+            }
+        )
 
         signed_tx = w3.eth.account.sign_transaction(tx, private_key)
         tx_hash = w3.eth.send_raw_transaction(signed_tx.raw_transaction)
@@ -143,7 +166,9 @@ async def send_usdc_bsc(destination_wallet: str, amount: float, rpc_url: str, pr
 
         receipt = await wait_tx_receipt_async(w3, tx_hash.hex())
         if receipt.status == 1:
-            logger.info(f"✅ USDC BEP20 berhasil masuk ke {destination_wallet}, tx_hash={tx_hash.hex()}")
+            logger.info(
+                f"✅ USDC BEP20 berhasil masuk ke {destination_wallet}, tx_hash={tx_hash.hex()}"
+            )
             get_usdc_balance(from_address, rpc_url, token_address)
             get_usdc_balance(destination_wallet, rpc_url, token_address)
             return tx_hash.hex()

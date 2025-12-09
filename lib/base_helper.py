@@ -26,13 +26,10 @@ async def send_base(
     amount_base: float,
     rpc_url: str,
     private_key: str,
-    order_id: str = None,
-    user_id: int = None,
-    username: str = None,
-    full_name: str = None,
 ):
     """
     Kirim BASE ke wallet tujuan, menggunakan RPC + private key dari endpoint.
+    Gas fee dan gas limit otomatis dari RPC.
     Lempar exception supaya crypto_sender.py yang handle notif/logging.
     """
     try:
@@ -58,16 +55,19 @@ async def send_base(
         nonce = w3.eth.get_transaction_count(sender_address)
         value = w3.to_wei(amount_base, "ether")
 
-        tx = {
+        # Estimasi gas otomatis
+        tx_dict = {
             "nonce": nonce,
             "to": Web3.to_checksum_address(destination_wallet),
             "value": value,
-            "gas": 21000,
-            "gasPrice": w3.eth.gas_price,
             "chainId": w3.eth.chain_id,
         }
+        gas_estimate = w3.eth.estimate_gas({**tx_dict, "from": sender_address})
+        tx_dict["gas"] = gas_estimate
+        # Ambil gas price otomatis dari RPC
+        tx_dict["gasPrice"] = w3.eth.gas_price
 
-        signed_tx = w3.eth.account.sign_transaction(tx, private_key)
+        signed_tx = w3.eth.account.sign_transaction(tx_dict, private_key)
         tx_hash = w3.eth.send_raw_transaction(signed_tx.raw_transaction)
         logger.info(
             f"✅ Kirim {amount_base} BASE ke {destination_wallet}, tx_hash: {tx_hash.hex()}"

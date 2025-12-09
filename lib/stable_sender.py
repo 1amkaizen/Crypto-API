@@ -27,9 +27,6 @@ async def send_usdt_token(
             private_key=private_key,
             token_address=token_address,  # diteruskan ke helper
         )
-        logger.info(
-            f"✅ USDT berhasil dikirim ke {destination_wallet} di chain {chain.upper()}, tx: {tx_hash}"
-        )
         return tx_hash
     except Exception as e:
         logger.error(
@@ -63,9 +60,7 @@ async def send_usdc_token(
             private_key=private_key,
             token_address=token_address,  # diteruskan ke helper
         )
-        logger.info(
-            f"✅ USDC berhasil dikirim ke {destination_wallet} di chain {chain.upper()}, tx: {tx_hash}"
-        )
+
         return tx_hash
     except Exception as e:
         logger.error(

@@ -76,7 +76,7 @@ def send_usdc_base_sync(
     private_key: str,
     token_address: str,
 ):
-    """Kirim USDC Base (sync, robust, dinamis)"""
+    """Kirim USDC Base (sync, gas fee otomatis dari RPC)"""
     try:
         destination_wallet = Web3.to_checksum_address(destination_wallet.strip())
         token_address = Web3.to_checksum_address(token_address.strip())
@@ -93,14 +93,21 @@ def send_usdc_base_sync(
 
         value = int(amount * (10**decimals))
         nonce = w3.eth.get_transaction_count(from_address, "pending")
-        safe_gas_price = int(w3.eth.gas_price * 1.2)
+
+        # Estimasi gas otomatis
+        gas_estimate = contract.functions.transfer(
+            destination_wallet, value
+        ).estimate_gas({"from": from_address})
+
+        # Gas price otomatis dari RPC
+        gas_price = w3.eth.gas_price
 
         txn = contract.functions.transfer(destination_wallet, value).build_transaction(
             {
                 "from": from_address,
                 "nonce": nonce,
-                "gas": 300000,
-                "gasPrice": safe_gas_price,
+                "gas": gas_estimate,
+                "gasPrice": gas_price,
                 "chainId": w3.eth.chain_id,
             }
         )

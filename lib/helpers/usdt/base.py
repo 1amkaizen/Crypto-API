@@ -1,5 +1,4 @@
 # 📍 lib/helpers/usdt/base.py
-
 import logging
 import time
 import asyncio
@@ -11,7 +10,6 @@ logging.basicConfig(
     level=logging.INFO, format="%(asctime)s [%(levelname)s] %(name)s: %(message)s"
 )
 
-# ERC20 ABI minimal
 ERC20_ABI = [
     {
         "constant": True,
@@ -47,7 +45,6 @@ ERC20_ABI = [
 
 
 def get_usdt_balance(wallet_address: str, rpc_url: str, token_address: str) -> float:
-    """Cek saldo USDT Base (dinamis, mirip ETH)"""
     try:
         wallet_address = Web3.to_checksum_address(wallet_address)
         token_address = Web3.to_checksum_address(token_address.strip())
@@ -76,7 +73,7 @@ def send_usdt_base_sync(
     private_key: str,
     token_address: str,
 ):
-    """Kirim USDT Base (sync, robust, dinamis)"""
+    """Kirim USDT Base (sync, gas otomatis)"""
     try:
         destination_wallet = Web3.to_checksum_address(destination_wallet.strip())
         token_address = Web3.to_checksum_address(token_address.strip())
@@ -93,14 +90,19 @@ def send_usdt_base_sync(
 
         value = int(amount * (10**decimals))
         nonce = w3.eth.get_transaction_count(from_address, "pending")
-        safe_gas_price = int(w3.eth.gas_price * 1.2)
+
+        # ===== gas otomatis dari RPC =====
+        gas_estimate = contract.functions.transfer(
+            destination_wallet, value
+        ).estimate_gas({"from": from_address})
+        gas_price = w3.eth.gas_price
 
         txn = contract.functions.transfer(destination_wallet, value).build_transaction(
             {
                 "from": from_address,
                 "nonce": nonce,
-                "gas": 300000,
-                "gasPrice": safe_gas_price,
+                "gas": gas_estimate,
+                "gasPrice": gas_price,
                 "chainId": w3.eth.chain_id,
             }
         )
@@ -149,7 +151,6 @@ async def send_usdt_base(
     private_key: str,
     token_address: str,
 ):
-    """Kirim USDT Base (async-safe)"""
     loop = asyncio.get_running_loop()
     return await loop.run_in_executor(
         None,

@@ -26,11 +26,8 @@ async def send_bnb(
     amount_bnb: float,
     rpc_url: str,
     private_key: str,
-    order_id=None,
-    user_id=None,
-    username=None,
 ):
-    """Kirim BNB ke wallet tujuan, user input RPC + private key"""
+    """Kirim BNB ke wallet tujuan, gas fee dan gas limit otomatis dari RPC"""
     try:
         if not private_key.startswith("0x"):
             private_key = "0x" + private_key
@@ -52,26 +49,24 @@ async def send_bnb(
         nonce = w3.eth.get_transaction_count(sender_address)
         value = w3.to_wei(amount_bnb, "ether")
 
-        # Chain ID default: 56 mainnet
-        chain_id = 56
-        if "testnet" in rpc_url.lower():
-            chain_id = 97  # BSC testnet
+        # Chain ID default: 56 mainnet, 97 testnet
+        chain_id = 56 if "testnet" not in rpc_url.lower() else 97
 
-        tx = {
+        tx_dict = {
             "nonce": nonce,
             "to": Web3.to_checksum_address(destination_wallet),
             "value": value,
-            "gas": 21000,
-            "gasPrice": w3.eth.gas_price,
             "chainId": chain_id,
         }
 
-        logger.info(
-            f"🚀 Kirim BNB ke {destination_wallet} | amount={amount_bnb} | "
-            f"order_id={order_id} | user_id={user_id} | username={username}"
-        )
+        # Estimasi gas otomatis
+        gas_estimate = w3.eth.estimate_gas({**tx_dict, "from": sender_address})
+        tx_dict["gas"] = gas_estimate
 
-        signed_tx = w3.eth.account.sign_transaction(tx, private_key)
+        # Gas price otomatis dari RPC
+        tx_dict["gasPrice"] = w3.eth.gas_price
+
+        signed_tx = w3.eth.account.sign_transaction(tx_dict, private_key)
         tx_hash = w3.eth.send_raw_transaction(signed_tx.raw_transaction)
         tx_hash_hex = tx_hash.hex()
 

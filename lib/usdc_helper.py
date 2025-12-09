@@ -6,7 +6,7 @@ from lib.helpers.usdc.bsc import send_usdc_bsc
 from lib.helpers.usdc.trx import send_usdc_trx
 from lib.helpers.usdc.base import send_usdc_base
 from lib.helpers.usdc.sol import send_usdc_solana
-
+from lib.helpers.usdc.polygon import send_usdc_polygon  
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(
@@ -70,6 +70,14 @@ async def send_usdc(
             rpc_url,
             private_key,
             token_address,
+        )
+    elif chain == "polygon":  # ✅ support Polygon
+        return await send_usdc_polygon(
+            destination_wallet,
+            amount,
+            rpc_url=rpc_url,
+            private_key=private_key,
+            token_address=token_address,
         )
     else:
         raise ValueError(f"Chain {chain} tidak didukung untuk USDC!")

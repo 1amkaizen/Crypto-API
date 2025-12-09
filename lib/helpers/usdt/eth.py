@@ -8,7 +8,6 @@ logging.basicConfig(
     level=logging.INFO, format="%(asctime)s [%(levelname)s] %(name)s: %(message)s"
 )
 
-# ===== ERC20 ABI =====
 ERC20_ABI = [
     {
         "constant": False,
@@ -37,7 +36,6 @@ ERC20_ABI = [
 ]
 
 
-# ===== Fungsi cek saldo USDT =====
 def get_usdt_balance(wallet_address: str, rpc_url: str, token_address: str) -> float:
     try:
         w3 = Web3(Web3.HTTPProvider(rpc_url))
@@ -61,7 +59,6 @@ def get_usdt_balance(wallet_address: str, rpc_url: str, token_address: str) -> f
         return 0.0
 
 
-# ===== Async polling untuk receipt =====
 async def wait_tx_receipt_async(
     w3: Web3, tx_hash: str, poll_interval: int = 5, timeout: int = 180
 ):
@@ -80,14 +77,13 @@ async def wait_tx_receipt_async(
         await asyncio.sleep(poll_interval)
 
 
-# ===== Fungsi Kirim USDT ERC20 =====
 async def send_usdt_eth(
     destination_wallet: str,
     amount: float,
     rpc_url: str,
     private_key: str,
     token_address: str,
-    chain_id: int = None,  # opsional, mainnet/testnet
+    chain_id: int = None,
 ):
     try:
         if not rpc_url or not private_key or not token_address:
@@ -115,7 +111,6 @@ async def send_usdt_eth(
         from_address = Web3.to_checksum_address(account.address)
         destination_wallet = Web3.to_checksum_address(destination_wallet)
         token_address = Web3.to_checksum_address(token_address)
-
         contract = w3.eth.contract(address=token_address, abi=ERC20_ABI)
 
         try:
@@ -128,7 +123,6 @@ async def send_usdt_eth(
         get_usdt_balance(from_address, rpc_url, token_address)
         get_usdt_balance(destination_wallet, rpc_url, token_address)
 
-        # cek balance cukup
         balance_usdt = contract.functions.balanceOf(from_address).call() / (
             10**decimals
         )
@@ -138,11 +132,17 @@ async def send_usdt_eth(
         value = int(amount * (10**decimals))
         nonce = w3.eth.get_transaction_count(from_address, "pending")
 
+        # ===== gas otomatis dari RPC =====
+        gas_estimate = contract.functions.transfer(
+            destination_wallet, value
+        ).estimate_gas({"from": from_address})
+        gas_price = w3.eth.gas_price
+
         tx = contract.functions.transfer(destination_wallet, value).build_transaction(
             {
                 "chainId": chain_id,
-                "gas": 100000,
-                "gasPrice": int(w3.eth.gas_price * 1.2),
+                "gas": gas_estimate,
+                "gasPrice": gas_price,
                 "nonce": nonce,
                 "from": from_address,
             }

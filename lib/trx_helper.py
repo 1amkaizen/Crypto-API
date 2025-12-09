@@ -12,10 +12,6 @@ async def send_trx(
     amount_trx: float,
     rpc_url: str = None,  # 🔹 endpoint kirim rpc_url
     private_key: str = None,  # 🔹 endpoint kirim private_key
-    order_id: str = None,
-    user_id: int = None,
-    username: str = None,
-    full_name: str = None,
 ) -> str:
     """
     📌 Kirim TRX ke wallet tujuan
@@ -47,10 +43,7 @@ async def send_trx(
         if balance < amount_trx:
             raise Exception("❌ Saldo TRX admin tidak cukup!")
 
-        logger.info(
-            f"🚀 Kirim TRX ke {destination_wallet} | amount={amount_trx} | "
-            f"order_id={order_id} | user_id={user_id} | username={username}"
-        )
+        logger.info(f"🚀 Kirim TRX ke {destination_wallet} | amount={amount_trx}")
 
         amount_sun = int(amount_trx * 1_000_000)  # 1 TRX = 1_000_000 SUN
 

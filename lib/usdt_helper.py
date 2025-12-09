@@ -5,12 +5,13 @@ from lib.helpers.usdt.bsc import send_usdt_bsc
 from lib.helpers.usdt.trx import send_usdt_trx
 from lib.helpers.usdt.base import send_usdt_base
 from lib.helpers.usdt.sol import send_usdt_solana
+from lib.helpers.usdt.polygon import send_usdt_polygon  # ✅ import Polygon
 import asyncio
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(
     level=logging.INFO,
-    format="%(asctime)s [%(levelname)s] %(name)s: %(name)s: %(message)s",
+    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
 )
 
 
@@ -70,6 +71,14 @@ async def send_usdt(
             rpc_url,
             private_key,
             token_address,
+        )
+    elif chain == "polygon":  # ✅ support Polygon
+        return await send_usdt_polygon(
+            destination_wallet,
+            amount,
+            rpc_url=rpc_url,
+            private_key=private_key,
+            token_address=token_address,
         )
     else:
         raise ValueError(f"Chain {chain} tidak didukung untuk USDT!")
