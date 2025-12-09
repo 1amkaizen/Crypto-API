@@ -42,14 +42,30 @@ class ErrorResponse(BaseModel):
 
 # Mapping token ke CoinGecko ID
 COINGECKO_IDS = {
-    "sol": "solana",
-    "eth": "ethereum",
-    "bnb": "binancecoin",
-    "usdt": "tether",
-    "usdc": "usd-coin",
-    "trx": "tron",
-    "ton": "the-open-network",
+    "sol": "solana",                # Solana
+    "eth": "ethereum",              # Ethereum
+    "bnb": "binancecoin",           # Binance Coin
+    "usdt": "tether",               # Tether
+    "usdc": "usd-coin",             # USD Coin
+    "trx": "tron",                  # TRON
+    "ton": "the-open-network",      # TON
+    "matic": "matic-network",       # Polygon alias MATIC
+    "polygon": "matic-network",     # Polygon alias lain
+    "link": "chainlink",            # Chainlink
+    "ada": "cardano",               # Cardano
+    "doge": "dogecoin",             # Dogecoin
+    "dot": "polkadot",              # Polkadot
+    "avax": "avalanche-2",          # Avalanche
+    "ftt": "ftx-token",             # FTX Token
+    "cake": "pancakeswap-token",    # PancakeSwap
+    "shib": "shiba-inu",            # Shiba Inu
+    "luna": "terra-luna",           # Terra
+    "atom": "cosmos",               # Cosmos
+    "xrp": "ripple",                # Ripple
+    "bch": "bitcoin-cash",          # Bitcoin Cash
+    "ltc": "litecoin",              # Litecoin
 }
+
 
 
 async def get_token_price_usd(token: str) -> float:

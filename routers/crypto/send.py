@@ -31,7 +31,7 @@ class ErrorResponse(BaseModel):
         "- Ethereum: eth\n"
         "- Binance Smart Chain: bnb\n"
         "- TRON: trx\n"
-        "- Polygon: polygon\n"
+        "- Polygon: polygon (MATIC)\n"
         "- Base: base\n\n"
         "Pastikan RPC URL dan private key valid.\n"
         "Response mengandung status transaksi dan tx_hash.\n"
@@ -106,15 +106,14 @@ async def send_native_token(
     summary="Send USDC",
     description=(
         "Endpoint untuk kirim USDC ke wallet tujuan.\n"
-        "Supported chains: ETH, BSC, TRX, Polygon, Base\n\n"
-        "- Solana: sol\n"
+        "Supported chains: ETH, BSC, TRON, Polygon, Base\n\n"
         "- Ethereum: eth\n"
         "- Binance Smart Chain: bnb\n"
         "- TRON: trx\n"
         "- Polygon: polygon (MATIC)\n"
         "- Base: base\n\n"
         "- Pastikan token_address sesuai chain.\n"
-        "- RPC URL dan private key harus valid.\n"
+        "- RPC URL dan private key valid.\n"
         "Response mengandung status transaksi dan tx_hash."
     ),
     response_model=SendResponse,
@@ -188,7 +187,7 @@ async def send_usdc_endpoint(
     summary="Send USDT",
     description=(
         "Endpoint untuk kirim USDT ke wallet tujuan.\n"
-        "Supported chains: ETH, BSC, TRX, Polygon, Base, Solana\n\n"
+        "Supported chains: ETH, BSC, TRON, Polygon, Base, Solana\n\n"
         "- Solana: sol\n"
         "- Ethereum: eth\n"
         "- Binance Smart Chain: bnb\n"
@@ -196,7 +195,7 @@ async def send_usdc_endpoint(
         "- Polygon: polygon (MATIC)\n"
         "- Base: base\n\n"
         "- Pastikan token_address sesuai chain.\n"
-        "- RPC URL dan private key harus valid.\n"
+        "- RPC URL dan private key valid.\n"
         "Response mengandung status transaksi dan tx_hash."
     ),
     response_model=SendResponse,
