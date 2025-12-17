@@ -20,8 +20,8 @@ API service untuk manajemen dan pengiriman token crypto (ETH, USDT, USDC, BNB, S
 1. Clone repo:
 
 ```bash
-git clone https://github.com/1amkaizen/Crypto-API.git
-cd Crypto-API
+git clone https://github.com/1amkaizen/multichain-crypto-api.git
+cd multichain-crypto-api
 ```
 
 2. Buat virtual environment & install dependencies:
@@ -89,6 +89,6 @@ Semua endpoint berada di prefix `/api/v1/crypto`.
 
 ## 📄 Lisensi
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/1amkaizen/crypto-api-service/blob/main/LICENSE)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/1amkaizen/multichain-crypto-api/blob/main/LICENSE)
 
 
